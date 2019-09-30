@@ -1,0 +1,299 @@
+device-tree-origin: kernel
+volumes:
+  lun-0:
+    schema: gpt
+    bootloader: lk
+    structure:
+      - name: writable
+        filesystem: ext4
+        filesystem-label: writable
+        size: 1G
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        role: system-data
+  lun-1:
+    schema: gpt
+    structure:
+      - name: xbl_a
+        size: 3670016
+        type: DEA0BA2C-CBDD-4805-B4F9-F428251C3E98
+        content:
+            - image: blobs/xbl.elf
+      - name: xbl_config_a
+        size: 131072
+        type: 5A325AE4-4276-B66D-0ADD-3494DF27706A
+        content:
+            - image: blobs/xbl_config.elf
+  lun-2:
+    schema: gpt
+    structure:
+      - name: xbl_b
+        size: 3670016
+        type: DEA0BA2C-CBDD-4805-B4F9-F428251C3E98
+        content:
+            - image: blobs/xbl.elf
+      - name: xbl_config_b
+        size: 131072
+        type: 5A325AE4-4276-B66D-0ADD-3494DF27706A
+        content:
+            - image: blobs/xbl_config.elf
+  lun-3:
+    schema: gpt
+    structure:
+      - name: cdt
+        size: 131072
+        type: A19F205F-CCD8-4B6D-8F1E-2D9BC24CFFB1
+      - name: ddr
+        size: 1M
+        type: 20A0C19C-286A-42FA-9CE7-F64C3226A794
+  lun-4:
+    schema: gpt
+    structure:
+      # These are the 'A' partition's needed for the A/B boot/ota update feature
+      # If you add something to this section remember to add it to B as well
+      - name: aop_a
+        size: 524288
+        type: D69E90A5-4CAB-0071-F6DF-AB977F141A7F
+        content:
+            - image: blobs/aop.mbn
+      - name: tz_a
+        size: 2M
+        type: A053AA7F-40B8-4B1C-BA08-2F68AC71A4F4
+        content:
+            - image: blobs/tz.mbn
+      - name: hyp_a
+        size: 524288
+        type: E1A6A689-0C8D-4CC6-B4E8-55A4320FBD8A
+        content:
+            - image: blobs/hyp.mbn
+      - name: modem_a
+        size: 120M
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+      - name: bluetooth_a
+        size: 1M
+        type: 6CB747F1-C2EF-4092-ADD0-CA39F79C7AF4
+        content:
+            - image: blobs/BTFM.bin
+      - name: mdtpsecapp_a
+        size: 4M
+        type: EA02D680-8712-4552-A3BE-E6087829C1E6
+      - name: mdtp_a
+        size: 32M
+        type: 3878408A-E263-4B67-B878-6340B35B11E3
+      - name: abl_a
+        size: 1M
+        type: BD6928A1-4CE0-A038-4F3A-1495E3EDDFFB
+        content:
+            - image: blobs/abl.elf
+      - name: dsp_a
+        size: 32M
+        type: 7EFE5010-2A1A-4A1A-B8BC-990257813512
+        content:
+            - image: blobs/dspso.bin
+      - name: keymaster_a
+        size: 524288
+        type: A11D2A7C-D82A-4C2F-8A01-1805240E6626
+        content:
+            - image: blobs/keymaster64.mbn
+      - name: boot_a
+        size: 64M
+        type: 20117F86-E985-4357-B9EE-374BC1D8487D
+        role: bootimg
+      - name: cmnlib_a
+        size: 524288
+        type: 73471795-AB54-43F9-A847-4F72EA5CBEF5
+        content:
+            - image: blobs/cmnlib.mbn
+      - name: cmnlib64_a
+        size: 524288
+        type: 8EA64893-1267-4A1B-947C-7C362ACAAD2C
+        content:
+            - image: blobs/cmnlib64.mbn
+      - name: devcfg_a
+        size: 131072
+        type: F65D4B16-343D-4E25-AAFC-BE99B6556A6D
+        content:
+            - image: blobs/devcfg.mbn
+      - name: qupfw_a
+        size: 65536
+        type: 21d1219f-2ed1-4ab4-930a-41a16ae75f7f
+        content:
+            - image: blobs/qupv3fw.elf
+      - name: storsec_a
+        size: 131072
+        type: 02DB45FE-AD1B-4CB6-AECC-0042C637DEFA
+        content:
+            - image: blobs/storsec.mbn
+      - name: ImageFv_a
+        size: 1M
+        type: 17911177-C9E6-4372-933C-804B678E666F
+        content:
+            - image: blobs/imagefv.elf
+      - name: snapbootsel
+        size: 131072
+        type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
+        role: system-boot-select
+        content:
+            - image: snapbootsel.bin
+      # These are the 'B' partition's needed for the A/B boot/ota update feature.
+      # A and B partitions must have differrent GUID's.
+      # For convinience sake we keep all the B partitions with the same GUID"
+      - name: aop_b
+        size: 524288
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/aop.mbn
+      - name: tz_b
+        size: 2M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/tz.mbn
+      - name: hyp_b
+        size: 524288
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/hyp.mbn
+      - name: modem_b
+        size: 120M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+      - name: bluetooth_b
+        size: 1M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/BTFM.bin
+      - name: mdtpsecapp_b
+        size: 4M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+      - name: mdtp_b
+        size: 32M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+      - name: abl_b
+        size: 1M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/abl.elf
+      - name: dsp_b
+        size: 32M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/dspso.bin
+      - name: keymaster_b
+        size: 524288
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/keymaster64.mbn
+      - name: boot_b
+        size: 64M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        role: system-boot-image
+      - name: cmnlib_b
+        size: 524288
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/cmnlib.mbn
+      - name: cmnlib64_b
+        size: 524288
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/cmnlib64.mbn
+      - name: devcfg_b
+        size: 131072
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/devcfg.mbn
+      - name: qupfw_b
+        size: 65536
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/qupv3fw.elf
+      - name: storsec_b
+        size: 131072
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/storsec.mbn
+      - name: ImageFv_b
+        size: 1M
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        content:
+            - image: blobs/imagefv.elf
+      - name: snapbootselbak
+        size: 131072
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        role: system-boot-select
+        content:
+            - image: snapbootsel.bin
+      # These are non A/B partitions. In a A/B build these would not be updated via a OTA update
+      - name: boot_recovery
+        size: 64M
+        # role: recovery-boot-image
+        type: 33E4770F-6129-40C8-A93D-14C44375A941
+      - name: sec
+        size: 16384
+        type: 303E6AC3-AF15-4C54-9E9B-D9A8FBECF401
+        content:
+            - image: blobs/sec.dat
+      - name: devinfo
+        size: 1024
+        type: 65ADDCF4-0C5C-4D9A-AC2D-D90B5CBFCD03
+      - name: dip
+        size: 1M
+        type: 4114B077-005D-4E12-AC8C-B493BDA684FB
+      - name: fdemeta
+        size: 524288
+        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+      - name: apdp
+        size: 262144
+        type: E6E98DA2-E22A-4D12-AB33-169E7DEAA507
+      - name: msadp
+        size: 262144
+        type: ED9E8101-05FA-46B7-82AA-8D58770D200B
+      - name: spunvm
+        size: 8M
+        type: e42e2b4c-33b0-429b-b1ef-d341c547022c
+      - name: splash
+        size: 34226176
+        type: AD99F201-DC71-4E30-9630-E19EEF553D1B
+      - name: limits
+        size: 4096
+        type: 10A0C19C-516A-5444-5CE3-664C3226A794
+      - name: toolsfv
+        size: 1M
+        type: 97745ABA-135A-44C3-9ADC-05616173C24C
+      - name: logfs
+        size: 8M
+        type: BC0330EB-3410-4951-A617-03898DBE3372
+      - name: sti
+        size: 2M
+        type: AA9A5C4C-4F1F-7D3A-014A-22BD33BF7191
+      - name: rawdump
+        size: 128M
+        type: 66C9B323-F7FC-48B6-BF96-6F32E335A428
+      - name: logdump
+        size: 64M
+        type: 5AF80809-AABB-4943-9168-CDFC38742598
+  lun-5:
+    schema: gpt
+    structure:
+      - name: modemst1
+        size: 2M
+        type: EBBEADAF-22C9-E33B-8F5D-0E81686A68CB
+      - name: modemst2
+        size: 2M
+        type: 0A288B1F-22C9-E33B-8F5D-0E81686A68CB
+      - name: fsg
+        size: 2M
+        type: 638FF8E2-22C9-E33B-8F5D-0E81686A68CB
+      - name: fsc
+        size: 131072
+        type: 57B90A16-22C9-E33B-8F5D-0E81686A68CB
+      - name: ssd
+        size: 8192
+        type: 2C86E742-745E-4FDD-BFD8-B6A7AC638772
+      - name: misc
+        size: 1M
+        type: 82ACC91F-357C-4A68-9C8F-689E1B1A23A1
+      - name: keystore
+        size: 524288
+        type: DE7D4029-0F5B-41C8-AE7E-F6C023A02B33
+      - name: frp
+        size: 524288
+        type: 91B72D4D-71E0-4CBF-9B8E-236381CFF17A
