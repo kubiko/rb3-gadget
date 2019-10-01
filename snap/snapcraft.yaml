@@ -14,5 +14,12 @@ architectures:
 confinement: strict
 grade: stable
 
+parts:
+    prebuilt:
+        plugin: dump
+        source: prebuilt
+        organize:
+            '*': blobs/
+
 
 
