@@ -90,6 +90,26 @@ parts:
                           --bootimg-file boot.img
             ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
 
+    clang:
+        plugin: dump
+        source: https://source.codeaurora.org/quic/la/platform/prebuilts/clang/host/linux-x86
+        source-depth: 1
+        source-type: git
+        source-tag: LA.UM.7.9.r1-07300-sm6150.0
+        organize:
+            '*': clang/
+        prime:
+            - -*
+
+    gcc-aarch64-6-3:
+        plugin: dump
+        source: http://releases.linaro.org/components/toolchain/binaries/6.3-2017.02/aarch64-linux-gnu/gcc-linaro-6.3.1-2017.02-x86_64_aarch64-linux-gnu.tar.xz
+        source-type: tar
+        organize:
+            '*': aarch64-linux/
+        prime:
+            - -*
+
     partioning-tool:
         plugin: dump
         source: https://git.linaro.org/landing-teams/working/qualcomm/partioning_tool.git
