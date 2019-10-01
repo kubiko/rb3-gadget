@@ -21,6 +21,43 @@ parts:
         organize:
             '*': blobs/
 
+    abl:
+        plugin: nil
+        after:
+            - gcc-aarch64-6-3
+            - clang
+        source: https://git.linaro.org/landing-teams/working/qualcomm/abl.git
+        source-type: git
+        source-branch: release/LE.UM.3.2.2.r1-02700-sdm845.0
+        source-depth: 1
+        override-pull: |
+          snapcraftctl pull
+          git apply ${SNAPCRAFT_PROJECT_DIR}/00*.patch
+        override-build: |
+          [ -e out ] && rm -rf out
+          mkdir -p out/edk2
+          export PATH=${SNAPCRAFT_STAGE}/aarch64-linux/bin/:${PATH}
+          ABL_GIT_COMMIT=62ede9e48292d3e50f8bb62761be7de76cfcec86
+          make all BOOTLOADER_OUT=out/edk2 \
+              BUILD_SYSTEM_ROOT_IMAGE=0 \
+              VERIFIED_BOOT=0 \
+              VERIFIED_BOOT_2=0 \
+              VERIFIED_BOOT_LE=0 \
+              USER_BUILD_VARIANT=0 \
+              DISABLE_PARALLEL_DOWNLOAD_FLASH=1 \
+              ABL_USE_SDLLVM=false \
+              ABL_SAFESTACK=false \
+              AB_RETRYCOUNT_DISABLE=1 \
+              CLANG_BIN=${SNAPCRAFT_STAGE}/clang/clang-4691093/bin/ \
+              CLANG_PREFIX=aarch64-linux-gnu- \
+              CLANG_GCC_TOOLCHAIN=/aarch64-linux-gnu-gcc \
+              TARGET_ARCHITECTURE=AARCH64 \
+              BOARD_BOOTLOADER_PRODUCT_NAME=SuperEDK2k
+          cp abl.elf ${SNAPCRAFT_PART_INSTALL}/abl.elf.nonsecure
+          ln ${SNAPCRAFT_PART_INSTALL}/abl.elf.nonsecure ${SNAPCRAFT_PART_INSTALL}/abl.elf
+        organize:
+            '*': blobs/
+
     firmware-blobs:
         plugin: dump
         source: http://snapshots.linaro.org/96boards/dragonboard845c/linaro/rescue/latest/dragonboard-845c-bootloader-ufs-linux-*.zip
