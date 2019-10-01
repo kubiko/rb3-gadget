@@ -21,5 +21,19 @@ parts:
         organize:
             '*': blobs/
 
+    snap-boot-sel-env:
+        plugin: nil
+        source: snap-boot-sel
+        source-type: local
+        override-pull: |
+            snapcraftctl pull
+            wget https://raw.githubusercontent.com/snapcore/snapd/master/include/lk/snappy_boot_v1.h
+        override-build: |
+            gcc lk-boot-env.c -I/usr/include/ -o lk-boot-env
+            # configure initial boot environment
+            ./lk-boot-env --write ${SNAPCRAFT_PART_INSTALL}/snapbootsel.bin \
+                          $( ./parse-yaml.sh ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml ) \
+                          --bootimg-file boot.img
+            ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
 
 
