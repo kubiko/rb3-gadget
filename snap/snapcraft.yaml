@@ -91,6 +91,17 @@ parts:
                           --bootimg-file boot.img
             ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
 
+    clang:
+        plugin: dump
+        source: https://source.codeaurora.org/quic/la/platform/prebuilts/clang/host/linux-x86
+        source-depth: 1
+        source-type: git
+        source-tag: LA.UM.7.9.r1-07300-sm6150.0
+        organize:
+            '*': clang/
+        prime:
+            - -*
+
     partioning-tool:
         plugin: dump
         source: https://github.com/kubiko/partitioning_tool.git
