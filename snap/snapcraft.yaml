@@ -36,4 +36,13 @@ parts:
                           --bootimg-file boot.img
             ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
 
+    partioning-tool:
+        plugin: dump
+        source: https://git.linaro.org/landing-teams/working/qualcomm/partioning_tool.git
+        source-depth: 1
+        source-type: git
+        organize:
+            LICENSE: LICENSE_for_ptool
+        prime:
+            - -*
 
