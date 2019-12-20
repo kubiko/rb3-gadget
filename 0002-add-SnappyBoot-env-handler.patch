@@ -1,0 +1,365 @@
+From 9caffd11956bbf93181887583e2d466c7a17be10 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Fri, 20 Dec 2019 01:17:16 +0000
+Subject: [PATCH 2/4] add SnappyBoot env handler
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ QcomModulePkg/Include/Library/SnappyBoot.h |  25 ++
+ QcomModulePkg/Library/BootLib/SnappyBoot.c | 312 +++++++++++++++++++++
+ 2 files changed, 337 insertions(+)
+ create mode 100644 QcomModulePkg/Include/Library/SnappyBoot.h
+ create mode 100644 QcomModulePkg/Library/BootLib/SnappyBoot.c
+
+diff --git a/QcomModulePkg/Include/Library/SnappyBoot.h b/QcomModulePkg/Include/Library/SnappyBoot.h
+new file mode 100644
+index 0000000000..bf19c6a549
+--- /dev/null
++++ b/QcomModulePkg/Include/Library/SnappyBoot.h
+@@ -0,0 +1,25 @@
++/**
++ * Copyright (C) 2019 Canonical Ltd
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 3 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _BOOTLOADER_SNAP_BOOT_H
++#define _BOOTLOADER_SNAP_BOOT_H
++
++#include <Library/PartitionTableUpdate.h>
++#include "snappy_boot_v1.h"
++
++EFI_STATUS snap_get_target_boot_params(Slot *BootableSlot, CHAR8 **cmdline);
++#endif
+diff --git a/QcomModulePkg/Library/BootLib/SnappyBoot.c b/QcomModulePkg/Library/BootLib/SnappyBoot.c
+new file mode 100644
+index 0000000000..259ffdb6c3
+--- /dev/null
++++ b/QcomModulePkg/Library/BootLib/SnappyBoot.c
+@@ -0,0 +1,312 @@
++/**
++ * Copyright (C) 2019 Canonical Ltd
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 3 as
++  * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#include <Uefi.h>
++#include <Library/BaseLib.h>
++#include <Library/Board.h>
++#include <Library/BootLinux.h>
++#include <Library/LinuxLoaderLib.h>
++#include <Library/UefiLib.h>
++#include <Uefi/UefiSpec.h>
++#include <VerifiedBoot.h>
++#include <Library/SnappyBoot.h>
++
++static CHAR8 cmdline_buf[512];
++
++const CHAR8* Snap_Permited_Reboot_Reasons[] = {"backup-serial", "restore-serial"};
++#define SNAP_NUM_OF_REBOOT_REASONS (ARRAY_SIZE(Snap_Permited_Reboot_Reasons))
++
++static uint32_t crc32(uint32_t crc, unsigned char *buf, size_t len)
++{
++    int k;
++
++    crc = ~crc;
++    while (len--) {
++        crc ^= *buf++;
++        for (k = 0; k < 8; k++)
++            crc = crc & 1 ? (crc >> 1) ^ 0xedb88320 : crc >> 1;
++    }
++    return ~crc;
++}
++
++
++static EFI_STATUS map_bootimg(const SNAP_BOOT_SELECTION_t *boot_select, Slot *BootableSlot, const CHAR8 *snap_kernel);
++static EFI_STATUS load_environment(SNAP_BOOT_SELECTION_t **boot_select);
++static EFI_STATUS save_environment(SNAP_BOOT_SELECTION_t *boot_select);
++static EFI_STATUS load_environment_from_part(const CHAR8 *partName, SNAP_BOOT_SELECTION_t **BootSelect);
++static EFI_STATUS save_environment_to_part(SNAP_BOOT_SELECTION_t *boot_select, const CHAR8 *partName);
++static EFI_STATUS SaveImageToPartition (VOID *ImageBuffer, UINT32 ImageSize, CHAR16 *Pname);
++static UINT32 StringLenClean(const CHAR8 *string);
++
++EFI_STATUS snap_get_target_boot_params(Slot *BootableSlot, CHAR8 **cmdline)
++{
++    EFI_STATUS Status = EFI_SUCCESS;
++    CHAR8 *snap_core, *snap_kernel;
++    CHAR8 reboot_reason[50];
++    SNAP_BOOT_SELECTION_t *boot_select = NULL;
++    UINT32 i;
++
++    Status = load_environment(&boot_select);
++
++    if (boot_select == NULL) {
++        DEBUG ((EFI_D_INFO, "snap_get_target_boot_params no boot env loaded\n"));
++        return Status;
++    }
++
++    snap_core = boot_select->snap_core;
++    snap_kernel = boot_select->snap_kernel;
++    if ( !AsciiStrnCmp(boot_select->snap_mode, SNAP_MODE_TRY, SNAP_NAME_MAX_LEN)) {
++        AsciiStrCpyS(boot_select->snap_mode, SNAP_NAME_MAX_LEN, SNAP_MODE_TRYING);
++        Status = save_environment(boot_select);
++        if (EFI_SUCCESS != Status)
++            goto cleanup;
++        if ( AsciiStrLen(boot_select->snap_try_core)) {
++            snap_core = boot_select->snap_try_core;
++        }
++        if (AsciiStrLen( boot_select->snap_try_kernel)) {
++            snap_kernel = boot_select->snap_try_kernel;
++        }
++    } else if ( !AsciiStrnCmp(boot_select->snap_mode, SNAP_MODE_TRYING, SNAP_NAME_MAX_LEN)) {
++        boot_select->snap_mode[0] = 0;
++        Status = save_environment(boot_select);
++        if (EFI_SUCCESS != Status)
++            goto cleanup;
++    }
++
++    // update boot reason
++    // factory-reset: keep environment value to handle incomplete factory-reset
++    //                if all succeeds new environment is restored from backup
++    // other reboot reason: verify is permitted, clear value
++    // only proceed if there is reboot reason value
++    if (AsciiStrLen(boot_select->reboot_reason)) {
++        if ( !AsciiStrnCmp(boot_select->reboot_reason, FACTORY_RESET, AsciiStrLen(FACTORY_RESET))) {
++            AsciiStrnCpyS (reboot_reason,
++                           sizeof(reboot_reason),
++                           boot_select->reboot_reason,
++                           StringLenClean (boot_select->reboot_reason));
++        } else {
++            for (i=0; i < SNAP_NUM_OF_REBOOT_REASONS; ++i) {
++                if ( !AsciiStrnCmp(boot_select->reboot_reason,
++                                    Snap_Permited_Reboot_Reasons[i],
++                                    AsciiStrLen(Snap_Permited_Reboot_Reasons[i]))
++                   ) {
++                    DEBUG ((EFI_D_INFO, "snap: Updating reboot reason [%a]\n", boot_select->reboot_reason));
++                    AsciiStrnCpyS (reboot_reason,
++                                   sizeof(reboot_reason),
++                                   boot_select->reboot_reason,
++                                   StringLenClean (boot_select->reboot_reason));
++                    // clearing reboot reason
++                    boot_select->reboot_reason[0] = 0;
++                    // ignore error for clearing reboot reason
++                    save_environment(boot_select);
++                    break;
++                }
++            }
++        }
++    }
++    Status = map_bootimg(boot_select, BootableSlot, snap_kernel);
++    if (reboot_reason) {
++        AsciiSPrint(cmdline_buf, sizeof(cmdline_buf), " snap_core=%a snap_kernel=%a %a", snap_core, snap_kernel, reboot_reason);
++    } else {
++        AsciiSPrint(cmdline_buf, sizeof(cmdline_buf), " snap_core=%a snap_kernel=%a", snap_core, snap_kernel);
++    }
++    *cmdline = cmdline_buf;
++    cleanup:
++        // if (boot_select != NULL) {
++        //     FreePool(boot_select);
++        // }
++        DEBUG ((EFI_D_INFO, "snap_get_target_boot_params skip cleanup\n"));
++        return Status;
++}
++
++EFI_STATUS map_bootimg(const SNAP_BOOT_SELECTION_t *boot_select, Slot *BootableSlot, const CHAR8 *snap_kernel)
++{
++    for (size_t n = 0; n < SNAP_BOOTIMG_PART_NUM; ++n) {
++        if (!AsciiStrnCmp(boot_select->bootimg_matrix[n][1], snap_kernel, SNAP_NAME_MAX_LEN)) {
++            if (AsciiStrLen(boot_select->bootimg_matrix[n][0])) {
++                // we need only slot part of partition table ( '_a' or '_b')
++                AsciiStrToUnicodeStr(boot_select->bootimg_matrix[n][0] + (AsciiStrLen(boot_select->bootimg_matrix[n][0]) - 2), BootableSlot->Suffix);
++                return EFI_SUCCESS;
++            }
++        }
++    }
++    DEBUG ((EFI_D_ERROR, "snap: map_bootimg: did not find valid boot partition!!!\n"));
++    return EFI_NOT_FOUND;
++}
++
++// try to load backup env if main fails
++static EFI_STATUS load_environment(SNAP_BOOT_SELECTION_t **boot_select )
++{
++    EFI_STATUS Status = EFI_SUCCESS;
++    Status = load_environment_from_part(SNAP_BOOTSELECT_PARTITION, boot_select);
++    if (*boot_select == NULL) {
++        Status = load_environment_from_part(SNAP_BOOTSELECT_PARTITION "bak", boot_select);
++        // if we successfully loaded backup env, try to save it to main, ignore error
++        if (*boot_select)
++            save_environment_to_part( *boot_select, SNAP_BOOTSELECT_PARTITION);
++    }
++    return Status;
++}
++
++// save always to main and backup env
++static EFI_STATUS save_environment(SNAP_BOOT_SELECTION_t *boot_select)
++{
++    // if at least one write works, return success, use two variables, that compiler
++    // does not optimise
++    EFI_STATUS r = save_environment_to_part( boot_select, SNAP_BOOTSELECT_PARTITION);
++    EFI_STATUS rb = save_environment_to_part( boot_select, SNAP_BOOTSELECT_PARTITION "bak");
++    return r == EFI_SUCCESS ? rb : r;
++}
++
++static EFI_STATUS load_environment_from_part(const CHAR8 *partName, SNAP_BOOT_SELECTION_t **BootSelect)
++{
++    EFI_STATUS Status = EFI_SUCCESS;
++    // UINT32 ImageSizeActual = 0;
++    UINT32 ActualStructSize = 0;
++    UINT32 crc = 0;
++    SNAP_BOOT_SELECTION_t *boot_select = NULL;
++    CHAR16 Pname[MAX_GPT_NAME_SIZE];
++
++    ActualStructSize = sizeof(SNAP_BOOT_SELECTION_t) + 60;
++    // BlockIo = HandleInfoList[0].BlkIo;
++    // BlockIo->Media->BlockSize;
++    DEBUG ((EFI_D_INFO, "snap: aligned size %d\n", ALIGN_PAGES (ActualStructSize, ALIGNMENT_MASK_4KB)));
++    // boot_select = (SNAP_BOOT_SELECTION_t *) AllocateZeroPool (ALIGN_PAGES (ActualStructSize, ALIGNMENT_MASK_4KB));
++    boot_select = (SNAP_BOOT_SELECTION_t *) AllocatePages (ALIGN_PAGES (ActualStructSize, ALIGNMENT_MASK_4KB));
++    if (boot_select == NULL) {
++      DEBUG ((EFI_D_ERROR, "snap: Failed to allocate zero pool for ImageBuffer\n"));
++      return EFI_OUT_OF_RESOURCES;
++    }
++
++    AsciiStrToUnicodeStr(partName, Pname);
++    Status = LoadImageFromPartition ((VOID *)(boot_select), (UINT32 *)&(ActualStructSize), Pname);
++    if (Status != EFI_SUCCESS) {
++      DEBUG ((EFI_D_ERROR, "ERROR: Failed to load image from partition: %r\n",
++              Status));
++      goto cleanup;
++    }
++
++    DEBUG ((EFI_D_INFO, "snap: load_environment(%s): read SNAP_BOOT_SELECTION: SUCCESS, read %d bytes\n", Pname, ActualStructSize));
++    if ( boot_select->version != SNAP_BOOTSELECT_VERSION || boot_select->signature != SNAP_BOOTSELECT_SIGNATURE )
++    {
++        DEBUG ((EFI_D_ERROR, "snap: load_environment(%s): ERROR version/signature broken [0x%X] vs [0x%X], [0x%X] vs [0x%X]!\n",
++            Pname, boot_select->version, SNAP_BOOTSELECT_VERSION, boot_select->signature, SNAP_BOOTSELECT_SIGNATURE));
++        Status = EFI_INCOMPATIBLE_VERSION;
++        goto cleanup;
++    }
++    crc = crc32( 0, (unsigned char *)boot_select, sizeof(SNAP_BOOT_SELECTION_t)-sizeof(uint32_t));
++    if ( boot_select->crc32 != crc )
++    {
++        DEBUG ((EFI_D_ERROR, "snap: load_environment(%s): ERROR crc32 broken [0x%X] vs [0x%X]!\n", Pname, boot_select->crc32, crc ));
++        Status = EFI_CRC_ERROR;
++        goto cleanup;
++    } else {
++        DEBUG ((EFI_D_INFO, "snap: load_environment(%s): crc32 sucessfully validated\n", Pname ));
++    }
++    *BootSelect = boot_select;
++    return Status;
++
++    cleanup:
++        if ( boot_select ) {
++            FreePool(boot_select);
++        }
++        return Status;
++}
++
++static EFI_STATUS save_environment_to_part( SNAP_BOOT_SELECTION_t *boot_select, const CHAR8 *partName)
++{
++    EFI_STATUS Status = EFI_SUCCESS;
++    CHAR16 Pname[MAX_GPT_NAME_SIZE];
++
++    if (boot_select == NULL) {
++        DEBUG ((EFI_D_ERROR, "snap: save_environment_to_part: invalid boot_select\n"));
++    }
++
++    boot_select->crc32 = crc32( 0, (unsigned char *)boot_select, sizeof(SNAP_BOOT_SELECTION_t) - sizeof(uint32_t));
++
++    AsciiStrToUnicodeStr(partName, Pname);
++    Status = SaveImageToPartition((VOID *)boot_select, sizeof(SNAP_BOOT_SELECTION_t), Pname);
++    if(Status != EFI_SUCCESS)
++    {
++        DEBUG ((EFI_D_ERROR, "ERROR: snap: save_environment: ERROR, cannot write SNAP_BOOTSELECT info\n"));
++    }
++    return Status;
++}
++
++static EFI_STATUS SaveImageToPartition (VOID *ImageBuffer, UINT32 ImageSize, CHAR16 *Pname)
++{
++    EFI_STATUS Status;
++    EFI_BLOCK_IO_PROTOCOL *BlkIo;
++    PartiSelectFilter HandleFilter;
++    HandleInfo HandleInfoList[1];
++    STATIC UINT32 MaxHandles;
++    STATIC UINT32 BlkIOAttrib = 0;
++    EFI_HANDLE *Handle = NULL;
++
++    BlkIOAttrib = BLK_IO_SEL_PARTITIONED_MBR;
++    BlkIOAttrib |= BLK_IO_SEL_PARTITIONED_GPT;
++    BlkIOAttrib |= BLK_IO_SEL_MEDIA_TYPE_NON_REMOVABLE;
++    BlkIOAttrib |= BLK_IO_SEL_MATCH_PARTITION_LABEL;
++
++    HandleFilter.RootDeviceType = NULL;
++    HandleFilter.PartitionLabel = Pname;
++    HandleFilter.VolumeName = NULL;
++
++    DEBUG ((DEBUG_INFO, "snap: SaveImageToPartition: Start : %u ms\n", GetTimerCountms ()));
++
++    MaxHandles = sizeof (HandleInfoList) / sizeof (*HandleInfoList);
++
++    Status = GetBlkIOHandles (BlkIOAttrib, &HandleFilter, HandleInfoList, &MaxHandles);
++
++    if (Status == EFI_SUCCESS) {
++        if (MaxHandles == 0) {
++            DEBUG ((EFI_D_ERROR, "ERROR: snap: no partion found [%s] \n", Pname));
++            return EFI_NO_MEDIA;
++        }
++        if (MaxHandles != 1) {
++            // Unable to deterministically load from single partition
++            DEBUG ((EFI_D_INFO, "ExecImgFromVolume(): multiple partitions found.\r\n"));
++            return EFI_LOAD_ERROR;
++        }
++    } else {
++        DEBUG ((EFI_D_ERROR, "%s: GetBlkIOHandles failed: %r\n", __func__, Status));
++        return Status;
++    }
++
++    BlkIo = HandleInfoList[0].BlkIo;
++    Handle = HandleInfoList[0].Handle;
++    Status = WriteBlockToPartition (BlkIo, Handle, 0, ImageSize, ImageBuffer);
++    if (Status != EFI_SUCCESS) {
++        DEBUG ((EFI_D_ERROR, "SaveImageToPartition: failed :%r\n", Status));
++    }
++
++    return Status;
++}
++
++static UINT32 StringLenClean(const CHAR8 *String)
++{
++    UINT32 Length;
++    UINT32 MaxLength = AsciiStrLen(String);
++    for (Length = 0;
++         String != NULL
++           && *String != '\0'
++           && *String != ' '
++           && Length < MaxLength;
++         String++, Length++) {
++    }
++    return Length;
++}
+-- 
+2.26.2
+

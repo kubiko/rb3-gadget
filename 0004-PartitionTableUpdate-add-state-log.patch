@@ -1,0 +1,26 @@
+From dbec6995cdd6879e0a042a79c4168d20e1cc9bf3 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Fri, 20 Dec 2019 01:18:22 +0000
+Subject: [PATCH 4/4] PartitionTableUpdate: add state log
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ QcomModulePkg/Library/BootLib/PartitionTableUpdate.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/QcomModulePkg/Library/BootLib/PartitionTableUpdate.c b/QcomModulePkg/Library/BootLib/PartitionTableUpdate.c
+index 5709f096f5..15ba322277 100644
+--- a/QcomModulePkg/Library/BootLib/PartitionTableUpdate.c
++++ b/QcomModulePkg/Library/BootLib/PartitionTableUpdate.c
+@@ -1571,6 +1571,8 @@ FindBootableSlot (Slot *BootableSlot)
+       (BootEntry->PartEntry.Attributes & PART_ATT_MAX_RETRY_COUNT_VAL) >>
+       PART_ATT_MAX_RETRY_CNT_BIT;
+ 
++  DEBUG ((EFI_D_INFO, "OK: FindBootableSlot [%d] [%d][%d]\n", Unbootable, BootSuccess, RetryCount));
++
+   if (Unbootable == 0 && BootSuccess == 1) {
+     DEBUG (
+         (EFI_D_VERBOSE, "Active Slot %s is bootable\n", BootableSlot->Suffix));
+-- 
+2.26.2
+
