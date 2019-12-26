@@ -298,3 +298,10 @@ volumes:
       - name: frp
         size: 524288
         type: 91B72D4D-71E0-4CBF-9B8E-236381CFF17A
+
+  defaults:
+  # system watchdog settings
+  system:
+    watchdog:
+      runtime-timeout: 1m
+      shutdown-timeout: 2m
