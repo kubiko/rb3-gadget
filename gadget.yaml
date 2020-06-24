@@ -4,7 +4,17 @@ volumes:
     schema: gpt
     bootloader: lk
     structure:
-      - name: writable
+      - name: ubuntu-seed
+        filesystem: ext4
+        filesystem-label: ubuntu-seed
+        size: 500M
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+      - name: ubuntu-save
+        filesystem: ext4
+        filesystem-label: ubuntu-save
+        size: 50M
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+      - name: ubuntu-data
         filesystem: ext4
         filesystem-label: writable
         size: 1G
@@ -132,6 +142,10 @@ volumes:
         size: 131072
         type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
         role: system-boot-select
+      - name: snaprecoverysel
+        size: 131072
+        type: 3EED58A7-EED2-4824-A935-95898FFE17F5
+        # role: system-recovery-select
         content:
             - image: snapbootsel.bin
       # These are the 'B' partition's needed for the A/B boot/ota update feature.
@@ -219,6 +233,10 @@ volumes:
         size: 131072
         type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
         role: system-boot-select
+      - name: snaprecoveryselbak
+        size: 131072
+        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+        # role: system-recovery-select
         content:
             - image: snapbootsel.bin
       # These are non A/B partitions. In a A/B build these would not be updated via a OTA update
