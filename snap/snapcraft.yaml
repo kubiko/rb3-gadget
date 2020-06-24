@@ -177,10 +177,10 @@ parts:
                   -o ${SNAPCRAFT_PART_INSTALL} \
                   -sa
               ln -f ${SNAPCRAFT_PART_INSTALL}/sdm845/abl/abl.elf ${SNAPCRAFT_PART_INSTALL}/abl.elf.signed
-              snapcraftctl set-version ${VERSION}
+              snapcraftctl set-version ${VERSION}-fde
           else
               ln -f ${SNAPCRAFT_STAGE}/blobs/abl.elf.nonsecure ${SNAPCRAFT_PART_INSTALL}/abl.elf
-              snapcraftctl set-version ${VERSION}-unsigned
+              snapcraftctl set-version ${VERSION}-fde-unsigned
           fi
         organize:
             '*': blobs/

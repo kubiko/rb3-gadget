@@ -4,6 +4,16 @@ volumes:
     schema: gpt
     bootloader: lk
     structure:
+      - name: seed
+        filesystem: ext4
+        filesystem-label: seed
+        size: 500M
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+      - name: save
+        filesystem: ext4
+        filesystem-label: save
+        size: 50M
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
       - name: writable
         filesystem: ext4
         filesystem-label: writable

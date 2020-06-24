@@ -69,10 +69,17 @@ if [ "${REPARTITION}" = "true" ]; then
   fastboot flash abl_a abl.elf
 fi
 
+if [ "${FORMAT_HARD}" = "true" ]; then
+  echo "Erasing save partition!!!"
+  fastboot erase save
+fi
+
 fastboot flash boot_a boot.img
+fastboot flash boot_r boot.img
 fastboot flash snapbootsel snapbootsel.bin
 fastboot flash snapbootselbak snapbootsel.bin
-fastboot flash writable writable.img
+
+fastboot flash seed seed.img
 
 if [ "${REBOOT}" = "true" ]; then
   fastboot reboot

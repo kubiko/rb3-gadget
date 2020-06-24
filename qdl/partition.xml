@@ -13,7 +13,9 @@
 
     <!-- This is LUN 0 - HLOS LUN" -->
     <physical_partition>
-        <partition label="writable" size_in_kb="writable-size" type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" filename="writable.raw" sparse="true"/>
+        <partition label="seed" size_in_kb="seed-size" type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" filename="seed.raw" sparse="true"/>
+        <partition label="save" size_in_kb="save-size" type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" filename="save.raw" sparse="true"/>
+        <partition label="writable" size_in_kb="writable-size" type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" sparse="true"/>
     </physical_partition>
 
     <!-- This is LUN 1 - Boot LUN A" -->
