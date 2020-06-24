@@ -186,3 +186,9 @@ parts:
             sdm845/abl/abl.elf: blobs/abl.elf
         stage:
              - blobs/abl.elf*
+
+build-packages:
+    - wget
+    - python
+    - gwenhywfar-tools
+    - build-essential
