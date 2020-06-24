@@ -192,3 +192,23 @@ build-packages:
     - python
     - gwenhywfar-tools
     - build-essential
+
+slots:
+  gpio-321:
+    interface: gpio
+    number: 321
+  gpio-335:
+    interface: gpio
+    number: 335
+  gpio-361:
+    interface: gpio
+    number: 361
+  i2c-10:
+    interface: i2c
+    path: /dev/i2c-10
+  i2c-11:
+    interface: i2c
+    path: /dev/i2c-11
+  i2c-14:
+    interface: i2c
+    path: /dev/i2c-14
