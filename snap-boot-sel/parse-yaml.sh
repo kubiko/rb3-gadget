@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2021 Canonical Ltd
+
 function parse_yaml {
    local prefix=$2
    local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
@@ -45,6 +48,9 @@ get_part_names() {
     x=$((x+1))
   done
 }
-# volumes__structure_18_role
-echo -e $(get_part_names ${1} 'system-boot-image\|bootimg' '--boot-' ) \
-        $(get_part_names ${1} 'system-recovery-image' '--recovery-' ) \
+if [ "${2}" = "recovery" ]; then
+  echo -e $(get_part_names ${1} 'system-seed-image' '--recovery-' )
+fi
+if [ "${2}" = "runtime" ]; then
+  echo -e $(get_part_names ${1} 'system-boot-image\|bootimg' '--boot-' )
+fi
