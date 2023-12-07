@@ -91,20 +91,6 @@ parts:
       - -blobs/rawprogram*
       - -blobs/patch*
 
-    snap-boot-sel-env:
-        plugin: nil
-        source: snap-boot-sel
-        source-type: local
-        override-pull: |
-            snapcraftctl pull
-            wget https://raw.githubusercontent.com/snapcore/snapd/master/include/lk/snappy_boot_v1.h
-        override-build: |
-            gcc lk-boot-env.c -I/usr/include/ -o lk-boot-env
-            # configure initial boot environment
-            ./lk-boot-env --write ${SNAPCRAFT_PART_INSTALL}/snapbootsel.bin \
-                          $( ./parse-yaml.sh ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml ) \
-                          --bootimg-file boot.img
-            ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
   gpt-partitions:
     plugin: nil
     source: qdl
@@ -147,6 +133,26 @@ parts:
       - blobs/patch*.xml
       - blobs/rawprogram*.xml
 
+  snap-boot-sel-env:
+    plugin: nil
+    source: snap-boot-sel
+    source-type: local
+    override-pull: |
+      craftctl default
+      wget https://raw.githubusercontent.com/snapcore/snapd/master/include/lk/snappy_boot_common.h
+      wget https://raw.githubusercontent.com/snapcore/snapd/master/include/lk/snappy_boot_v2.h
+    override-build: |
+      gcc lk-boot-env.c -I/usr/include/ -o lk-boot-env
+      # configure initial boot environment
+      ./lk-boot-env --runtime --write ${CRAFT_PART_INSTALL}/snapbootsel.bin \
+                    --bootimg-file boot.img \
+                    $( ./parse-yaml.sh ${CRAFT_PROJECT_DIR}/gadget.yaml runtime )
+      ./lk-boot-env --recovery --write ${CRAFT_PART_INSTALL}/snaprecoverysel.bin \
+                    --bootimg-file boot.img \
+                    $( ./parse-yaml.sh ${CRAFT_PROJECT_DIR}/gadget.yaml recovery )
+      ln -sf snaprecoverysel.bin ${CRAFT_PART_INSTALL}/lk.conf
+    organize:
+      snapbootsel.bin: blobs/snapbootsel.bin
 
   partioning-tool:
     plugin: dump
