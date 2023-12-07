@@ -5,11 +5,11 @@ description: |
 type: gadget
 adopt-info: sign-abl
 
-base: core20
+base: core22
 
 architectures:
   - build-on: [amd64, arm64]
-    run-on: arm64
+    build-for: arm64
 
 confinement: strict
 grade: stable
