@@ -15,11 +15,6 @@ confinement: strict
 grade: stable
 
 parts:
-    prebuilt:
-        plugin: dump
-        source: prebuilt
-        organize:
-            '*': blobs/
 
     abl:
         plugin: nil
@@ -56,6 +51,11 @@ parts:
           cp abl.elf ${SNAPCRAFT_PART_INSTALL}/abl.elf.nonsecure
         organize:
             '*': blobs/
+  prebuilt:
+    plugin: dump
+    source: prebuilt
+    organize:
+      '*': blobs/
 
     firmware-blobs:
         plugin: dump
