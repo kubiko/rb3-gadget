@@ -7,13 +7,17 @@
         WRITE_PROTECT_BOUNDARY_IN_KB=0
         SECTOR_SIZE_IN_BYTES = 4096
         GROW_LAST_PARTITION_TO_FILL_DISK=true
+        FIRST_SECTOR_OF_FIRST_PARTITION=256
     </parser_instructions>
 
     <!-- NOTE: "physical_partition" are listed in order and apply to UFS devices that have physical partitions -->
 
     <!-- This is LUN 0 - HLOS LUN" -->
     <physical_partition>
-        <partition label="writable" size_in_kb="writable-size" type="83,0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" filename="writable.raw" sparse="true"/>
+        <partition label="ubuntu-seed" size_in_kb="ubuntu-seed-size" type="0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" filename="ubuntu-seed.img" sparse="true"/>
+        <partition label="ubuntu-save" size_in_kb="ubuntu-save-size" type="0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" />
+        <partition label="ubuntu-boot" size_in_kb="ubuntu-boot-size" type="0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" sparse="true"/>
+        <partition label="ubuntu-data" size_in_kb="ubuntu-data-size" type="0FC63DAF-8483-4772-8E79-3D69D8477DE4" bootable="false" readonly="false" />
     </physical_partition>
 
     <!-- This is LUN 1 - Boot LUN A" -->
@@ -34,14 +38,14 @@
     <!-- QCOM development requirement: Ensure all partitions in LUN3 is a multiple of 128k
          Linux Android customers can ignore this requirement -->
     <physical_partition>
-        <partition label="ALIGN_TO_128K_1" size_in_kb="104" type="FDE1604B-D68B-4BD4-973D-962AE7A1ED88" bootable="false" readonly="true" />
+        <partition label="ALIGN_TO_128K_1" size_in_kb="ALIGN_TO_128K_1-size" type="FDE1604B-D68B-4BD4-973D-962AE7A1ED88" bootable="false" readonly="true" />
         <partition label="cdt" size_in_kb="cdt-size" type="A19F205F-CCD8-4B6D-8F1E-2D9BC24CFFB1" bootable="false" readonly="true" filename="" />
         <partition label="ddr" size_in_kb="ddr-size" type="20A0C19C-286A-42FA-9CE7-F64C3226A794" bootable="false" readonly="true"/>
         <partition label="last_parti" size_in_kb="0" type="00000000-0000-0000-0000-000000000000" bootable="false" readonly="true" filename="" />
     </physical_partition>
 
-   <!-- This is LUN 4 - Protected Read-only LUN" -->
-     <physical_partition>
+    <!-- This is LUN 4 - Protected Read-only LUN" -->
+    <physical_partition>
         <!-- These are the 'A' partition's needed for the A/B boot/ota update feature. If you add something to this section remember to add it to B as well
         Partition's that are expected to be OTA upgradable require a A and B version. If the partition you are adding is not expected to be OTA upgradable
         please add it after the 'B' partition list. If you do need to add a OTA upgradable partition please notify the linux team as well." -->
@@ -55,15 +59,16 @@
         <partition label="abl_a" size_in_kb="abl_a-size" type="BD6928A1-4CE0-A038-4F3A-1495E3EDDFFB" bootable="false" readonly="true" filename="abl.elf"/>
         <partition label="dsp_a" size_in_kb="dsp_a-size" type="7EFE5010-2A1A-4A1A-B8BC-990257813512" bootable="false" readonly="true" filename="dspso.bin"/>
         <partition label="keymaster_a" size_in_kb="keymaster_a-size" type="A11D2A7C-D82A-4C2F-8A01-1805240E6626" bootable="false" readonly="true" filename="keymaster64.mbn"/>
-        <partition label="boot_a" size_in_kb="boot_a-size" type="20117F86-E985-4357-B9EE-374BC1D8487D" bootable="false" readonly="false" filename="" />
+        <partition label="boot-ra" size_in_kb="boot-ra-size" type="20117F86-E985-4357-B9EE-374BC1D8487D" bootable="false" readonly="false" filename="boot.img" />
+        <partition label="boot-a" size_in_kb="boot-a-size" type="20117F86-E985-4357-B9EE-374BC1D8487D" bootable="false" readonly="false" filename="" />
         <partition label="cmnlib_a" size_in_kb="cmnlib_a-size" type="73471795-AB54-43F9-A847-4F72EA5CBEF5" bootable="false" readonly="true" filename="cmnlib.mbn"/>
         <partition label="cmnlib64_a" size_in_kb="cmnlib64_a-size" type="8EA64893-1267-4A1B-947C-7C362ACAAD2C" bootable="false" readonly="true" filename="cmnlib64.mbn"/>
         <partition label="devcfg_a" size_in_kb="devcfg_a-size" type="F65D4B16-343D-4E25-AAFC-BE99B6556A6D" bootable="false" readonly="false" filename="devcfg.mbn"/>
         <partition label="qupfw_a" size_in_kb="qupfw_a-size" type="21d1219f-2ed1-4ab4-930a-41a16ae75f7f" bootable="false" readonly="false" filename="qupv3fw.elf"/>
         <partition label="storsec_a" size_in_kb="storsec_a-size" type="02DB45FE-AD1B-4CB6-AECC-0042C637DEFA" bootable="false" readonly="false" filename="storsec.mbn"/>
         <partition label="ImageFv_a" size_in_kb="ImageFv_a-size" type="17911177-C9E6-4372-933C-804B678E666F" bootable="false" readonly="false" filename="imagefv.elf"/>
+        <partition label="snaprecoverysel" size_in_kb="snapbootsel-size" type="B214D5E4-D442-45E6-B8C6-01BDCD82D396" bootable="false" readonly="false" filename="snaprecoverysel.bin"/>
         <partition label="snapbootsel" size_in_kb="snapbootsel-size" type="B214D5E4-D442-45E6-B8C6-01BDCD82D396" bootable="false" readonly="false" filename="snapbootsel.bin"/>
-        <partition label="snaprecoverysel" size_in_kb="snaprecoverysel-size" type="3EED58A7-EED2-4824-A935-95898FFE17F5" bootable="false" readonly="false" filename="snapbootsel.bin"/>
         <!-- These are the 'B' partition's needed for the A/B boot/ota update feature. A and B partitions must have differrent GUID's. For convinience sake
          we keep all the B partitions with the same GUID" -->
         <partition label="aop_b" size_in_kb="aop_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="aop.mbn"/>
@@ -76,17 +81,17 @@
         <partition label="abl_b" size_in_kb="abl_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="true" filename="abl.elf"/>
         <partition label="dsp_b" size_in_kb="dsp_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="true" filename="dspso.bin"/>
         <partition label="keymaster_b" size_in_kb="keymaster_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="true" filename="keymaster64.mbn"/>
-        <partition label="boot_b" size_in_kb="boot_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="" />
+        <partition label="boot-rb" size_in_kb="boot-rb-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="" />
+        <partition label="boot-b" size_in_kb="boot-b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename=""/>
         <partition label="cmnlib_b" size_in_kb="cmnlib_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="true" filename="cmnlib.mbn"/>
         <partition label="cmnlib64_b" size_in_kb="cmnlib64_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="true" filename="cmnlib64.mbn"/>
         <partition label="devcfg_b" size_in_kb="devcfg_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="devcfg.mbn"/>
         <partition label="qupfw_b" size_in_kb="qupfw_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="qupv3fw.elf"/>
         <partition label="storsec_b" size_in_kb="storsec_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="storsec.mbn"/>
         <partition label="ImageFv_b" size_in_kb="ImageFv_b-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="imagefv.elf"/>
+        <partition label="snaprecoveryselbak" size_in_kb="snapbootselbak-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="snaprecoverysel.bin"/>
         <partition label="snapbootselbak" size_in_kb="snapbootselbak-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="snapbootsel.bin"/>
-        <partition label="snaprecoveryselbak" size_in_kb="snaprecoveryselbak-size" type="77036CD4-03D5-42BB-8ED1-37E5A88BAA34" bootable="false" readonly="false" filename="snapbootsel.bin"/>
         <!-- These are non A/B partitions. In a A/B build these would not be updated via a OTA update -->
-        <partition label="boot_recovery" size_in_kb="boot_recovery-size" type="33E4770F-6129-40C8-A93D-14C44375A941" bootable="false" readonly="false" filename="" />
         <partition label="sec" size_in_kb="sec-size" type="303E6AC3-AF15-4C54-9E9B-D9A8FBECF401" bootable="false" readonly="true" filename="sec.dat" />
         <partition label="devinfo" size_in_kb="devinfo-size" type="65ADDCF4-0C5C-4D9A-AC2D-D90B5CBFCD03" bootable="false" readonly="true" filename=""/>
         <partition label="dip" size_in_kb="dip-size" type="4114B077-005D-4E12-AC8C-B493BDA684FB" bootable="false" readonly="true" filename=""/>
@@ -108,7 +113,7 @@
     <!-- QCOM development requirement: Ensure all partitions in LUN5 is a multiple of 128k.
          Linux Android customers can ignore this requirement -->
     <physical_partition>
-        <partition label="ALIGN_TO_128K_2" size_in_kb="104" type="6891a3b7-0ccc-4705-bb53-2673cac193bd" bootable="false" readonly="true" />
+        <partition label="ALIGN_TO_128K_2" size_in_kb="ALIGN_TO_128K_2-size" type="6891a3b7-0ccc-4705-bb53-2673cac193bd" bootable="false" readonly="true" />
         <partition label="modemst1" size_in_kb="modemst1-size" type="EBBEADAF-22C9-E33B-8F5D-0E81686A68CB" bootable="false" readonly="false" filename=""/>
         <partition label="modemst2" size_in_kb="modemst2-size" type="0A288B1F-22C9-E33B-8F5D-0E81686A68CB" bootable="false" readonly="false" filename=""/>
         <partition label="fsg" size_in_kb="fsg-size" type="638FF8E2-22C9-E33B-8F5D-0E81686A68CB" bootable="false" readonly="true" filename=""/>

@@ -6,29 +6,35 @@ volumes:
     structure:
       - name: ubuntu-seed
         filesystem: ext4
-        filesystem-label: ubuntu-seed
         size: 500M
-        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        role: system-seed
       - name: ubuntu-save
         filesystem: ext4
-        filesystem-label: ubuntu-save
-        size: 50M
-        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 100M
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        role: system-save
+      - name: ubuntu-boot
+        filesystem: ext4
+        size: 10M
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        role: system-boot
       - name: ubuntu-data
         filesystem: ext4
-        filesystem-label: writable
         size: 1G
-        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         role: system-data
   lun-1:
     schema: gpt
     structure:
       - name: xbl_a
+        offset: 24576  # 0x6000 bytes (6 sectors)
         size: 3670016
         type: DEA0BA2C-CBDD-4805-B4F9-F428251C3E98
         content:
             - image: blobs/xbl.elf
       - name: xbl_config_a
+        offset: 3694592  # 0x386000 bytes (902 sectors)
         size: 131072
         type: 5A325AE4-4276-B66D-0ADD-3494DF27706A
         content:
@@ -37,11 +43,13 @@ volumes:
     schema: gpt
     structure:
       - name: xbl_b
+        offset: 24576  # 0x6000 bytes (6 sectors)
         size: 3670016
         type: DEA0BA2C-CBDD-4805-B4F9-F428251C3E98
         content:
             - image: blobs/xbl.elf
       - name: xbl_config_b
+        offset: 3694592  # 0x386000 bytes (902 sectors)
         size: 131072
         type: 5A325AE4-4276-B66D-0ADD-3494DF27706A
         content:
@@ -49,6 +57,9 @@ volumes:
   lun-3:
     schema: gpt
     structure:
+      - name: ALIGN_TO_128K_1
+        size: 106496
+        type: FDE1604B-D68B-4BD4-973D-962AE7A1ED88
       - name: cdt
         size: 131072
         type: A19F205F-CCD8-4B6D-8F1E-2D9BC24CFFB1
@@ -66,7 +77,7 @@ volumes:
         content:
             - image: blobs/aop.mbn
       - name: tz_a
-        size: 2M
+        size: 4M
         type: A053AA7F-40B8-4B1C-BA08-2F68AC71A4F4
         content:
             - image: blobs/tz.mbn
@@ -104,10 +115,14 @@ volumes:
         type: A11D2A7C-D82A-4C2F-8A01-1805240E6626
         content:
             - image: blobs/keymaster64.mbn
-      - name: boot_a
-        size: 64M
+      - name: boot-ra
+        size: 100M
         type: 20117F86-E985-4357-B9EE-374BC1D8487D
-        role: bootimg
+        role: system-seed-image
+      - name: boot-a
+        size: 100M
+        type: 20117F86-E985-4357-B9EE-374BC1D8487D
+        role: system-boot-image
       - name: cmnlib_a
         size: 524288
         type: 73471795-AB54-43F9-A847-4F72EA5CBEF5
@@ -138,16 +153,18 @@ volumes:
         type: 17911177-C9E6-4372-933C-804B678E666F
         content:
             - image: blobs/imagefv.elf
+      - name: snaprecoverysel
+        size: 131072
+        type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
+        role: system-seed-select
+        content:
+            - image: snaprecoverysel.bin
       - name: snapbootsel
         size: 131072
         type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
         role: system-boot-select
-      - name: snaprecoverysel
-        size: 131072
-        type: 3EED58A7-EED2-4824-A935-95898FFE17F5
-        # role: system-recovery-select
         content:
-            - image: snapbootsel.bin
+            - image: blobs/snapbootsel.bin
       # These are the 'B' partition's needed for the A/B boot/ota update feature.
       # A and B partitions must have differrent GUID's.
       # For convinience sake we keep all the B partitions with the same GUID"
@@ -195,9 +212,13 @@ volumes:
         type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
         content:
             - image: blobs/keymaster64.mbn
-      - name: boot_b
-        size: 64M
-        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
+      - name: boot-rb
+        size: 100M
+        type: 20117F86-E985-4357-B9EE-374BC1D8487D
+        role: system-seed-image
+      - name: boot-b
+        size: 100M
+        type: 20117F86-E985-4357-B9EE-374BC1D8487D
         role: system-boot-image
       - name: cmnlib_b
         size: 524288
@@ -229,28 +250,24 @@ volumes:
         type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
         content:
             - image: blobs/imagefv.elf
-      - name: snapbootselbak
-        size: 131072
-        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
-        role: system-boot-select
       - name: snaprecoveryselbak
         size: 131072
-        type: 77036CD4-03D5-42BB-8ED1-37E5A88BAA34
-        # role: system-recovery-select
+        type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
+        role: system-seed-select
         content:
-            - image: snapbootsel.bin
+            - image: snaprecoverysel.bin
+      - name: snapbootselbak
+        size: 131072
+        type: B214D5E4-D442-45E6-B8C6-01BDCD82D396
+        role: system-boot-select
+        content:
+            - image: blobs/snapbootsel.bin
       # These are non A/B partitions. In a A/B build these would not be updated via a OTA update
-      - name: boot_recovery
-        size: 64M
-        # role: recovery-boot-image
-        type: 33E4770F-6129-40C8-A93D-14C44375A941
       - name: sec
         size: 16384
         type: 303E6AC3-AF15-4C54-9E9B-D9A8FBECF401
-        content:
-            - image: blobs/sec.dat
       - name: devinfo
-        size: 1024
+        size: 4096
         type: 65ADDCF4-0C5C-4D9A-AC2D-D90B5CBFCD03
       - name: dip
         size: 1M
@@ -291,6 +308,9 @@ volumes:
   lun-5:
     schema: gpt
     structure:
+      - name: ALIGN_TO_128K_2
+        size: 106496
+        type: 6891A3B7-0CCC-4705-BB53-2673CAC193BD
       - name: modemst1
         size: 2M
         type: EBBEADAF-22C9-E33B-8F5D-0E81686A68CB
@@ -316,9 +336,8 @@ volumes:
         size: 524288
         type: 91B72D4D-71E0-4CBF-9B8E-236381CFF17A
 
-  defaults:
-  # system watchdog settings
+defaults:
+  # system default settings
   system:
-    watchdog:
-      runtime-timeout: 1m
-      shutdown-timeout: 2m
+    refresh:
+      retain: 2
