@@ -186,12 +186,20 @@ parts:
             sdm845/abl/abl.elf: blobs/abl.elf
         stage:
              - blobs/abl.elf*
+build-snaps:
+  - yq
 
 build-packages:
-    - wget
-    - python
-    - gwenhywfar-tools
-    - build-essential
+  - wget
+  - python2
+  - python3
+  - clang-11
+  - gwenhywfar-tools
+  - build-essential
+  - on arm64:
+    - gcc
+  - else:
+    - gcc-aarch64-linux-gnu
 
 slots:
   gpio-321:
