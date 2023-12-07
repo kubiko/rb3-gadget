@@ -148,16 +148,16 @@ parts:
       - blobs/rawprogram*.xml
 
 
+  partioning-tool:
+    plugin: dump
+    source: https://github.com/kubiko/partitioning_tool.git
+    source-depth: 1
+    source-type: git
+    organize:
+      LICENSE: LICENSE_for_ptool
+    prime:
+      - -'*'
 
-    partioning-tool:
-        plugin: dump
-        source: https://git.linaro.org/landing-teams/working/qualcomm/partioning_tool.git
-        source-depth: 1
-        source-type: git
-        organize:
-            LICENSE: LICENSE_for_ptool
-        prime:
-            - -*
 
     sign-abl:
         plugin: nil
