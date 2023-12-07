@@ -15,42 +15,6 @@ confinement: strict
 grade: stable
 
 parts:
-
-    abl:
-        plugin: nil
-        after:
-            - gcc-aarch64-6-3
-            - clang
-        source: https://git.linaro.org/landing-teams/working/qualcomm/abl.git
-        source-type: git
-        source-branch: release/LE.UM.3.2.2.r1-02700-sdm845.0
-        source-depth: 1
-        override-pull: |
-          snapcraftctl pull
-          git apply ${SNAPCRAFT_PROJECT_DIR}/00*.patch
-        override-build: |
-          [ -e out ] && rm -rf out
-          mkdir -p out/edk2
-          export PATH=${SNAPCRAFT_STAGE}/aarch64-linux/bin/:${PATH}
-          ABL_GIT_COMMIT=62ede9e48292d3e50f8bb62761be7de76cfcec86
-          make all BOOTLOADER_OUT=out/edk2 \
-              BUILD_SYSTEM_ROOT_IMAGE=0 \
-              VERIFIED_BOOT=0 \
-              VERIFIED_BOOT_2=0 \
-              VERIFIED_BOOT_LE=0 \
-              USER_BUILD_VARIANT=0 \
-              DISABLE_PARALLEL_DOWNLOAD_FLASH=1 \
-              ABL_USE_SDLLVM=false \
-              ABL_SAFESTACK=false \
-              AB_RETRYCOUNT_DISABLE=1 \
-              CLANG_BIN=${SNAPCRAFT_STAGE}/clang/clang-4691093/bin/ \
-              CLANG_PREFIX=aarch64-linux-gnu- \
-              CLANG_GCC_TOOLCHAIN=/aarch64-linux-gnu-gcc \
-              TARGET_ARCHITECTURE=AARCH64 \
-              BOARD_BOOTLOADER_PRODUCT_NAME=SuperEDK2k
-          cp abl.elf ${SNAPCRAFT_PART_INSTALL}/abl.elf.nonsecure
-        organize:
-            '*': blobs/
   prebuilt:
     plugin: dump
     source: prebuilt
@@ -74,6 +38,55 @@ parts:
             - -blobs/abl.elf
             - -blobs/rawprogram*
             - -blobs/patch*
+  abl:
+    plugin: nil
+    source: https://git.launchpad.net/~ondrak/+git/edk2
+    source-type: git
+    source-branch: LE.UM.3.2.2.r1-02700-sdm845.0-uc20
+    source-depth: 1
+    override-build: |
+      [ -e out ] && rm -rf out
+      # make sure default python is 2.x
+      mkdir -p bin
+      ln -f -s $(which python2) bin/python
+      # make sure we default to clang-11
+      sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-11 100
+      sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-11 100
+      export PATH="${CRAFT_PART_BUILD}/bin:${PATH}"
+      export ABL_GIT_COMMIT=$(git rev-parse HEAD)
+      export CC=gcc
+      export CXX=g++
+      export LD=ld
+      export AR=ar
+      export LINUX_BOOT_CPU_SELECTION_ENABLED=1
+      export TARGET_LINUX_BOOT_CPU_ID=7
+      make -j 1 \
+          'BUILD_SYSTEM_ROOT_IMAGE=0' \
+          'CLANG_BIN=/usr/bin/' \
+          'CLANG_PREFIX=/usr/bin/aarch64-linux-gnu-' \
+          'TARGET_ARCHITECTURE=aarch64' \
+          'BUILDDIR=${PWD}' \
+          'BOOTLOADER_OUT=${PWD}/out' \
+          'ENABLE_LE_VARIANT=false' \
+          'VERIFIED_BOOT_LE=1' \
+          'VERITY_LE=0' \
+          'VERIFIED_BOOT=0' \
+          'VERIFIED_BOOT_2=0' \
+          'UBUNTU_CORE_BOOT=1' \
+          'USER_BUILD_VARIANT=0' \
+          'SIGNED_KERNEL=1' \
+          'DISABLE_PARALLEL_DOWNLOAD_FLASH=1' \
+          'ABL_USE_SDLLVM=false' \
+          'ABL_SAFESTACK=false' \
+          'AB_RETRYCOUNT_DISABLE=1' \
+          'BOARD_BOOTLOADER_PRODUCT_NAME=SuperEDK2k' \
+          -f makefile all
+      cp out/Build/DEBUG_CLANG35/FV/abl.elf ${CRAFT_PART_INSTALL}/abl.elf.nonsecure
+      # clean clang alternatives
+      sudo update-alternatives --remove-all clang
+      sudo update-alternatives --remove-all clang++
+    organize:
+      '*': blobs/
 
     emmc-gpt-partitions:
         plugin: nil
@@ -126,25 +139,7 @@ parts:
                           --bootimg-file boot.img
             ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
 
-    clang:
-        plugin: dump
-        source: https://source.codeaurora.org/quic/la/platform/prebuilts/clang/host/linux-x86
-        source-depth: 1
-        source-type: git
-        source-tag: LA.UM.7.9.r1-07300-sm6150.0
-        organize:
-            '*': clang/
-        prime:
-            - -*
 
-    gcc-aarch64-6-3:
-        plugin: dump
-        source: http://releases.linaro.org/components/toolchain/binaries/6.3-2017.02/aarch64-linux-gnu/gcc-linaro-6.3.1-2017.02-x86_64_aarch64-linux-gnu.tar.xz
-        source-type: tar
-        organize:
-            '*': aarch64-linux/
-        prime:
-            - -*
 
     partioning-tool:
         plugin: dump
