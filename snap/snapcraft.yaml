@@ -21,23 +21,6 @@ parts:
     organize:
       '*': blobs/
 
-    firmware-blobs:
-        plugin: dump
-        source: http://snapshots.linaro.org/96boards/dragonboard845c/linaro/rescue/latest/dragonboard-845c-bootloader-ufs-linux-*.zip
-        source-type: zip
-        organize:
-             '*/*': blobs/
-        stage:
-            - -dragonboard-8*
-            - -blobs/flashall
-            - -blobs/MD5SUMS.txt
-            - -blobs/NON-HLOS.bin
-            - -blobs/gpt_backup*.bin
-            - -blobs/gpt_both*.bin
-            - -blobs/gpt*
-            - -blobs/abl.elf
-            - -blobs/rawprogram*
-            - -blobs/patch*
   abl:
     plugin: nil
     source: https://git.launchpad.net/~ondrak/+git/edk2
@@ -123,6 +106,25 @@ parts:
             - blobs/gpt_main*.bin
             - blobs/patch.xml
             - blobs/rawprogram.xml
+  firmware-blobs:
+    plugin: dump
+    source: http://snapshots.linaro.org/96boards/dragonboard845c/linaro/rescue/latest/dragonboard-845c-bootloader-ufs-linux-*.zip
+    source-type: zip
+    organize:
+      '*/*': blobs/
+    stage:
+      - -dragonboard-8*
+      - -blobs/flashall
+      - -blobs/MD5SUMS.txt
+      - -blobs/NON-HLOS.bin
+      - -blobs/gpt_*0.bin
+      - -blobs/gpt_*3.bin*
+      - -blobs/gpt_*4.bin
+      - -blobs/gpt_*5.bin
+      - -blobs/gpt_main*
+      - -blobs/abl.elf
+      - -blobs/rawprogram*
+      - -blobs/patch*
 
     snap-boot-sel-env:
         plugin: nil
