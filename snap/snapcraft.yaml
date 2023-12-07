@@ -71,41 +71,6 @@ parts:
     organize:
       '*': blobs/
 
-    emmc-gpt-partitions:
-        plugin: nil
-        source: qdl
-        after:
-            - partioning-tool
-        override-build: |
-            echo "Updating partition.xml sizes from gadget.yaml"
-            sizes=$(grep -e 'size' ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml | awk -F ": " '{ print $2}')
-            for name in $(grep -e '- name:' ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml | awk -F ": " '{ print $2}')
-            do
-               set $sizes; size=$1; shift; sizes="$*";
-               case $size in
-                    (0)  size="0" ;;
-                    (*G | *g) size=$(expr $(echo $size | sed -e 's/G//g' -e 's/g//g') \* 1024 \* 1024) ;;
-                    (*M | *m) size=$(expr $(echo $size | sed -e 's/M//g' -e 's/m//g') \* 1024) ;;
-                    (*K | *k) size=$(echo $size | sed -e 's/K//g' -e 's/k//g') ;;
-                    (*) size=$(expr $size / 1024) ;;
-                esac
-                sed -i \
-                    -e 's/\"'"${name}"'-size\"/\"'"${size}"'\"/g' \
-                    partition.xml
-            done
-            python ${SNAPCRAFT_STAGE}/ptool.py -x partition.xml -t .
-            [ -e rawprogram0_BLANK_GPT.xml ] && rm rawprogram*_BLANK_GPT.xml
-            [ -e rawprogram0_WIPE_PARTITIONS.xml ] && rm rawprogram*_WIPE_PARTITIONS.xml
-            xmlmerge rawprogram*.xml -o ${SNAPCRAFT_PART_INSTALL}/rawprogram.xml
-            xmlmerge patch*.xml -o ${SNAPCRAFT_PART_INSTALL}/patch.xml
-            cp gpt_* ${SNAPCRAFT_PART_INSTALL}/
-        organize:
-             '*': blobs/
-        stage:
-            - blobs/gpt_b*.bin
-            - blobs/gpt_main*.bin
-            - blobs/patch.xml
-            - blobs/rawprogram.xml
   firmware-blobs:
     plugin: dump
     source: http://snapshots.linaro.org/96boards/dragonboard845c/linaro/rescue/latest/dragonboard-845c-bootloader-ufs-linux-*.zip
@@ -140,6 +105,47 @@ parts:
                           $( ./parse-yaml.sh ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml ) \
                           --bootimg-file boot.img
             ln -sf snapbootsel.bin ${SNAPCRAFT_PART_INSTALL}/lk.conf
+  gpt-partitions:
+    plugin: nil
+    source: qdl
+    after:
+      - partioning-tool
+    override-build: |
+      echo "Updating partition.xml sizes from gadget.yaml"
+      convert_size() {
+        case $1 in
+          (0)  echo "0" ;;
+          (*G | *g) echo $(expr $(echo ${1} | sed -e 's/G//g' -e 's/g//g') \* 1024 \* 1024) ;;
+          (*M | *m) echo $(expr $(echo ${1} | sed -e 's/M//g' -e 's/m//g') \* 1024) ;;
+          (*K | *k) echo $(echo ${1} | sed -e 's/K//g' -e 's/k//g') ;;
+          (*) echo $(expr ${1} / 1024) ;;
+        esac
+      }
+      for p_name in $(cat ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml | yq eval '.volumes.[].structure.[].name')
+      do
+        export p=${p_name}
+        p_size=$(cat ${SNAPCRAFT_PROJECT_DIR}/gadget.yaml | yq eval '.volumes.[].structure.[] | select(.name == env(p)) | .size')
+        p_size=$(convert_size ${p_size})
+        echo -e "OK: partition: ${p_name} - ${p_size}"
+        sed -i \
+          -e 's/\"'"${p_name}"'-size\"/\"'"${p_size}"'\"/g' \
+          partition.xml
+      done
+      python3 ${CRAFT_STAGE}/ptool.py -x partition.xml -t .
+      [ -e rawprogram0_BLANK_GPT.xml ] && rm rawprogram*_BLANK_GPT.xml
+      [ -e rawprogram0_WIPE_PARTITIONS.xml ] && rm rawprogram*_WIPE_PARTITIONS.xml
+      cp rawprogram*.xml ${CRAFT_PART_INSTALL}
+      cp patch*.xml ${CRAFT_PART_INSTALL}
+      cp gpt_* ${CRAFT_PART_INSTALL}
+    organize:
+      '*': blobs/
+    stage:
+      - blobs/gpt_*0.bin
+      - blobs/gpt_*3.bin*
+      - blobs/gpt_*4.bin
+      - blobs/gpt_*5.bin
+      - blobs/patch*.xml
+      - blobs/rawprogram*.xml
 
 
 
