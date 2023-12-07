@@ -2,9 +2,8 @@ name: rb3
 summary: RB3 (Dragonboard 845) support package
 description: |
  Support files for booting RB3 (Dragonboard 845) board
+adopt-info: sign-assets
 type: gadget
-adopt-info: sign-abl
-
 base: core22
 
 architectures:
@@ -164,37 +163,51 @@ parts:
     prime:
       - -'*'
 
+  sign-assets:
+    plugin: nil
+    after:
+      - abl
+      - firmware-blobs
+    override-pull: |
+      # allow custom source definition
+      if [ -n "${GADGET_SNAP_SECTOOLS:-}" ]; then
+        if [ -d ${GADGET_SNAP_SECTOOLS} ]; then
+          ln -sf ${GADGET_SNAP_SECTOOLS} \
+              ${CRAFT_PART_SRC}/sectools
+        else
+          git clone --depth 1 ${GADGET_SNAP_SECTOOLS} \
+              ${CRAFT_PART_SRC}/sectools
+        fi
+      else
+        git clone git+ssh://git.launchpad.net/~ondrak/+git/sectools -b v5.62 SecTools || true
+        if [ ! -d SecTools ]; then
+          echo "!! Missing env GADGET_SNAP_SECTOOLS pointing to sectools"
+          echo "!! Produced snap won't be bootable"
+        fi
+      fi
+    override-build: |
+      cp ${CRAFT_STAGE}/blobs/abl.elf.nonsecure abl.elf
+      VERSION="22-1"
+      if [ -d SecTools ]; then
+        python2 SecTools/sectools.py secimage \
+          -v \
+          -c SecTools/config/sdm845/sdm845_secimage.xml \
+          -g abl \
+          -i abl.elf \
+          -o ${CRAFT_PART_INSTALL} \
+          -sa
+        ln -f ${CRAFT_PART_INSTALL}/sdm845/abl/abl.elf ${CRAFT_PART_INSTALL}/abl.elf.signed
+        craftctl set version=${VERSION}
+      else
+        ln -f ${CRAFT_STAGE}/blobs/abl.elf.nonsecure ${CRAFT_PART_INSTALL}/abl.elf
+        craftctl set version=${VERSION}-unsigned
+      fi
+    organize:
+      '*': blobs/
+      sdm845/abl/abl.elf: blobs/abl.elf
+    stage:
+      - blobs/abl.elf*
 
-    sign-abl:
-        plugin: nil
-        source-depth: 1
-        source-type: git
-        after:
-            - abl
-        override-pull: |
-          git clone git+ssh://git.launchpad.net/~ondrak/+git/sectools -b master SecTools || true
-          cp ${SNAPCRAFT_STAGE}/blobs/abl.elf.nonsecure abl.elf
-        override-build: |
-          VERSION="18-1"
-          if [ -d SecTools ]; then
-              python2 SecTools/sectools.py secimage \
-                  -v \
-                  -c SecTools/config/sdm845/sdm845_secimage.xml \
-                  -g abl \
-                  -i abl.elf \
-                  -o ${SNAPCRAFT_PART_INSTALL} \
-                  -sa
-              ln -f ${SNAPCRAFT_PART_INSTALL}/sdm845/abl/abl.elf ${SNAPCRAFT_PART_INSTALL}/abl.elf.signed
-              snapcraftctl set-version ${VERSION}
-          else
-              ln -f ${SNAPCRAFT_STAGE}/blobs/abl.elf.nonsecure ${SNAPCRAFT_PART_INSTALL}/abl.elf
-              snapcraftctl set-version ${VERSION}-unsigned
-          fi
-        organize:
-            '*': blobs/
-            sdm845/abl/abl.elf: blobs/abl.elf
-        stage:
-             - blobs/abl.elf*
 build-snaps:
   - yq
 
